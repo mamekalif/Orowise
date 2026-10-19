@@ -3,18 +3,20 @@ import json
 import re
 import math
 import os
+import random
+from datetime import date
 from collections import Counter
 from google import genai
 
 # Page Configuration
 st.set_page_config(
-    page_title="OroWise AI - Afaan Oromoo Proverbs",
+    page_title="OroWise AI - Khoobaa Dubbii",
     page_icon="🌿",
-    layout="centered"
+    layout="wide"
 )
 
-st.title("🌿 OroWise Hybrid AI Engine")
-st.caption("Search 3,351+ Afaan Oromoo Proverbs by Keyword or Situation for Khoobaa Dubbii")
+st.title("🌿 OroWise | Khoobaa Dubbii")
+st.caption("Interactive Gateway to 3,351+ Afaan Oromoo Proverbs & Cultural Wisdom")
 
 # --- Load Data ---
 @st.cache_data
@@ -66,10 +68,9 @@ def build_index(data_entries):
 
     return idf, doc_vectors, doc_norms
 
-# Initialize TF-IDF index
 idf, doc_vectors, doc_norms = build_index(data)
 
-def semantic_search(query, category_filter=None, top_n=5):
+def semantic_search(query, category_filter=None, top_n=10):
     q_tokens = tokenize(query)
     q_tf = Counter(q_tokens)
     q_len = len(q_tokens) or 1
@@ -93,109 +94,174 @@ def semantic_search(query, category_filter=None, top_n=5):
 api_key = os.environ.get("GEMINI_API_KEY") or st.secrets.get("GEMINI_API_KEY", "")
 client = genai.Client(api_key=api_key) if api_key else None
 
-def gemini_situation_match(situation_text, candidate_proverbs):
-    candidates_formatted = ""
-    for idx, p in enumerate(candidate_proverbs, 1):
-        candidates_formatted += f"{idx}. [{p.get('ID')}] {p.get('Mammaaksa_AO')} - Meaning: {p.get('Meaning_EN')}\n"
-
-    prompt = f"""
-    You are an expert scholar in Oromo culture and Afaan Oromoo oral tradition for the 'Khoobaa Dubbii' platform.
-    A user described the following real-life situation:
-    "{situation_text}"
-
-    Here are candidate Oromo proverbs:
-    {candidates_formatted}
-
-    Analyze the situation and explain which proverb fits best and why.
-    Provide a warm, culturally resonant response with advice rooted in Oromo philosophy (Safuu).
-    """
+def render_proverb_card(res, idx=None):
+    title_prefix = f"{idx}. " if idx else ""
+    st.markdown(f"### {title_prefix}[#{res.get('ID', 'N/A')}] {res.get('Mammaaksa_AO', '')}")
+    st.markdown(f"**Literal Translation:** {res.get('Translation_Literal_EN', 'N/A')}")
+    st.markdown(f"**Meaning:** {res.get('Meaning_EN', 'N/A')}")
+    st.caption(f"📁 Category: {res.get('Category_EN', 'General')} | 🏷️ Keywords: {res.get('Keywords_EN', 'N/A')}")
     
-    response = client.models.generate_content(
-        model='gemini-flash-latest',
-        contents=prompt,
-    )
-    return response.text
+    # Khoobaa Dubbii Social Share Formatting
+    share_text = f"\"{res.get('Mammaaksa_AO')}\"\n\nMeaning: {res.get('Meaning_EN')}\n\n#KhoobaaDubbii #OroWise #OromoProverbs"
+    st.code(share_text, language="text")
 
-# --- APP NAVIGATION TABS ---
-tab1, tab2 = st.tabs(["🔍 Search by Keyword / Topic", "📖 Search by Life Situation"])
+    if client and st.button(f"🤖 Generate AI Insights for #{res.get('ID')}", key=f"btn_ai_{res.get('ID')}_{random.randint(0,10000)}"):
+        prompt = f"""
+        You are an expert scholar in Afaan Oromoo literature for 'Khoobaa Dubbii'.
+        Analyze this Oromo proverb:
+        Proverb: {res.get('Mammaaksa_AO')}
+        Translation: {res.get('Translation_Literal_EN')}
+        Meaning: {res.get('Meaning_EN')}
+        Category: {res.get('Category_EN')}
+        
+        Provide:
+        1. Deep Cultural Context & Philosophy (Safuu / Oromo Values)
+        2. Modern Life Application / Moral Lesson
+        3. Ready-to-Publish Social Media Caption (with relevant hashtags)
+        """
+        with st.spinner("Generating AI Analysis..."):
+            try:
+                resp = client.models.generate_content(model='gemini-flash-latest', contents=prompt)
+                st.success("Cultural Analysis Generated!")
+                st.markdown(resp.text)
+            except Exception as e:
+                st.error(f"AI Error: {e}")
+    st.divider()
 
-# --- TAB 1: KEYWORD SEARCH ---
-with tab1:
+# --- APP NAVIGATION ---
+tab_names = [
+    "🌟 Featured & Daily", 
+    "🔍 Keyword Search", 
+    "📖 Life Situation (AI)", 
+    "📂 By Category & Theme", 
+    "🎭 By Mood", 
+    "🔤 Alphabetical (A-Z)", 
+    "🎲 Random Discover"
+]
+t1, t2, t3, t4, t5, t6, t7 = st.tabs(tab_names)
+
+# --- TAB 1: FEATURED & PROVERB OF THE DAY ---
+with t1:
+    st.subheader("📅 Proverb of the Day")
+    # Use day of year as seed for a stable daily proverb
+    day_seed = date.today().timetuple().tm_yday
+    daily_entry = data[day_seed % len(data)]
+    render_proverb_card(daily_entry)
+
+    st.subheader("✨ Featured Proverbs")
+    featured_indices = [10, 42, 108, 250, 500, 1000]
+    for fid in featured_indices:
+        if fid < len(data):
+            render_proverb_card(data[fid])
+
+# --- TAB 2: KEYWORD SEARCH ---
+with t2:
     col1, col2 = st.columns([3, 1])
     with col1:
-        user_query = st.text_input("Search word or concept:", placeholder="e.g. jaalala, patience, dhugaa", key="kw_query")
+        user_query = st.text_input("Search term or concept:", placeholder="e.g. jaalala, patience, dhugaa", key="kw_query")
     with col2:
-        categories = ["All"] + sorted(list(set(str(e.get('Category_EN', '')) for e in data if e.get('Category_EN'))))
-        selected_cat = st.selectbox("Category", categories, key="kw_cat")
+        cats = ["All"] + sorted(list(set(str(e.get('Category_EN', '')) for e in data if e.get('Category_EN'))))
+        selected_cat = st.selectbox("Category Filter", cats, key="kw_cat")
 
     if user_query:
-        results = semantic_search(user_query, category_filter=selected_cat, top_n=5)
+        results = semantic_search(user_query, category_filter=selected_cat, top_n=10)
         if not results:
-            st.warning("No proverbs found matching your query.")
+            st.warning("No matching proverbs found.")
         else:
-            st.subheader(f"Results for '{user_query}':")
+            st.subheader(f"Search Results for '{user_query}':")
             for idx, res in enumerate(results, 1):
-                with st.container():
-                    st.markdown(f"### {idx}. [{res.get('ID')}] {res.get('Mammaaksa_AO')}")
-                    st.markdown(f"**Literal:** {res.get('Translation_Literal_EN')}")
-                    st.markdown(f"**Meaning:** {res.get('Meaning_EN')}")
-                    st.caption(f"Category: {res.get('Category_EN')}")
+                render_proverb_card(res, idx)
 
-                    if client and st.button(f"🤖 Generate AI Insights for #{res.get('ID')}", key=f"btn_{res.get('ID')}"):
-                        prompt = f"""
-                        You are an expert scholar in Afaan Oromoo literature for 'Khoobaa Dubbii'.
-                        Analyze this Oromo proverb:
-                        Proverb: {res.get('Mammaaksa_AO')}
-                        Translation: {res.get('Translation_Literal_EN')}
-                        Meaning: {res.get('Meaning_EN')}
-                        Category: {res.get('Category_EN')}
-                        
-                        Provide:
-                        1. Deep Cultural Context & Philosophy (2-3 sentences)
-                        2. Modern Life Application / Moral Lesson
-                        3. Ready-to-Publish Social Media Caption (with relevant hashtags)
-                        """
-                        with st.spinner("Generating AI Analysis..."):
-                            try:
-                                resp = client.models.generate_content(model='gemini-flash-latest', contents=prompt)
-                                st.success("Cultural Analysis Generated!")
-                                st.markdown(resp.text)
-                            except Exception as e:
-                                st.error(f"Error: {e}")
-                    st.divider()
-
-# --- TAB 2: SITUATION / SCENARIO SEARCH ---
-with tab2:
-    st.subheader("Describe what is happening in your life or story:")
+# --- TAB 3: LIFE SITUATION (AI) ---
+with t3:
+    st.subheader("Describe a scenario or life situation:")
     situation = st.text_area(
-        "Situation Description",
-        placeholder="Example: Someone was offered help, but they were too arrogant to accept it and later regretted it when they failed alone.",
+        "Situation Context",
+        placeholder="Example: Someone refused advice from elders, thinking they knew better, but encountered failure.",
         height=100
     )
 
-    if st.button("💡 Find Proverb for this Situation", type="primary"):
+    if st.button("💡 Find Proverb & AI Guidance", type="primary"):
         if not situation.strip():
             st.warning("Please describe a situation first.")
         else:
-            with st.spinner("Finding matching proverbs..."):
-                candidates = semantic_search(situation, top_n=8)
-                
-                if not candidates:
-                    st.warning("No proverb match found for this situation.")
-                else:
-                    st.markdown("### Top Matching Proverbs:")
-                    for idx, res in enumerate(candidates[:3], 1):
-                        st.markdown(f"**{idx}. [{res.get('ID')}] {res.get('Mammaaksa_AO')}**")
-                        st.caption(f"Meaning: {res.get('Meaning_EN')}")
-                    
-                    st.divider()
+            candidates = semantic_search(situation, top_n=5)
+            if candidates:
+                st.markdown("### Top Recommended Proverbs:")
+                for idx, res in enumerate(candidates[:3], 1):
+                    st.markdown(f"**{idx}. [{res.get('ID')}] {res.get('Mammaaksa_AO')}**")
+                    st.caption(f"Meaning: {res.get('Meaning_EN')}")
+                st.divider()
 
-                    if client:
-                        with st.spinner("🤖 Gemini AI is analyzing cultural wisdom for your situation..."):
-                            try:
-                                match_explanation = gemini_situation_match(situation, candidates)
-                                st.subheader("🤖 Khoobaa Dubbii | Situation Guidance")
-                                st.markdown(match_explanation)
-                            except Exception as e:
-                                st.error(f"AI error: {e}")
+                if client:
+                    with st.spinner("🤖 Gemini AI is evaluating cultural guidance..."):
+                        candidates_formatted = "\n".join([f"{p.get('ID')}: {p.get('Mammaaksa_AO')} - {p.get('Meaning_EN')}" for p in candidates])
+                        prompt = f"""
+                        You are an expert scholar in Oromo philosophy and Safuu for 'Khoobaa Dubbii'.
+                        Situation: "{situation}"
+                        Candidate Proverbs:
+                        {candidates_formatted}
+                        
+                        Explain which proverb best addresses this situation and provide constructive advice rooted in Oromo tradition.
+                        """
+                        try:
+                            resp = client.models.generate_content(model='gemini-flash-latest', contents=prompt)
+                            st.subheader("🤖 Khoobaa Dubbii | Situation Guidance")
+                            st.markdown(resp.text)
+                        except Exception as e:
+                            st.error(f"AI Error: {e}")
+
+# --- TAB 4: CATEGORY & THEME ---
+with t4:
+    st.subheader("Explore by Category or Theme")
+    categories = sorted(list(set(str(e.get('Category_EN', 'General')) for e in data if e.get('Category_EN'))))
+    chosen_cat = st.selectbox("Select Category / Theme", categories)
     
+    cat_matches = [e for e in data if str(e.get('Category_EN', '')).lower() == chosen_cat.lower()]
+    st.info(f"Found {len(cat_matches)} proverbs in **{chosen_cat}**")
+    
+    for idx, res in enumerate(cat_matches[:15], 1):
+        render_proverb_card(res, idx)
+
+# --- TAB 5: BY MOOD ---
+with t5:
+    st.subheader("How are you feeling or what energy are you seeking?")
+    mood_keywords = {
+        "💪 Encouragement & Strength": "strength courage hope perseverance",
+        "⚖️ Wisdom & Caution": "wisdom warning caution secret truth",
+        "🤝 Unity & Friendship": "community unity friend help together",
+        "🌾 Patience & Growth": "patience work time harvest growth",
+        "⚖️ Justice & Integrity": "justice truth honor honesty safuu"
+    }
+    chosen_mood = st.radio("Choose Mood/Tone", list(mood_keywords.keys()), horizontal=True)
+    
+    if chosen_mood:
+        keyword = mood_keywords[chosen_mood]
+        results = semantic_search(keyword, top_n=8)
+        for idx, res in enumerate(results, 1):
+            render_proverb_card(res, idx)
+
+# --- TAB 6: ALPHABETICAL (A-Z) ---
+with t6:
+    st.subheader("Browse Alphabetically (Afaan Oromoo)")
+    letters = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "Y", "Z"]
+    selected_letter = st.selectbox("Select Starting Letter", letters)
+    
+    alpha_matches = [e for e in data if str(e.get('Mammaaksa_AO', '')).strip().upper().startswith(selected_letter)]
+    st.info(f"Found {len(alpha_matches)} proverbs starting with **'{selected_letter}'**")
+    
+    for idx, res in enumerate(alpha_matches[:20], 1):
+        render_proverb_card(res, idx)
+
+# --- TAB 7: RANDOM DISCOVER ---
+with t7:
+    st.subheader("🎲 Random Wisdom Generator")
+    if st.button("🔀 Show New Random Proverbs", type="primary"):
+        st.session_state["random_samples"] = random.sample(data, min(5, len(data)))
+    
+    if "random_samples" not in st.session_state:
+        st.session_state["random_samples"] = random.sample(data, min(5, len(data)))
+        
+    for idx, res in enumerate(st.session_state["random_samples"], 1):
+        render_proverb_card(res, idx)
+                        
