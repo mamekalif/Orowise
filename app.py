@@ -24,7 +24,7 @@ lang_choice = st.sidebar.radio("🌐 Afaan Filadhu / Choose Language:", ["Afaan 
 is_ao = (lang_choice == "Afaan Oromoo")
 
 if is_ao:
-    st.caption("Giddala Mammaaksa Oromoo 3,351+ fi Ogummaa Aadaa Oromoo Interactive AI'n Deeggarame")
+    st.caption("Wiirtuu Mammaaksa Oromoo 3,351+ fi Ogummaa Aadaa Oromoo Interactive AI'n Deeggarame")
 else:
     st.caption("Interactive Gateway to 3,351+ Afaan Oromoo Proverbs & Cultural Wisdom")
 
@@ -250,17 +250,17 @@ t0, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11 = st.tabs(tab_names)
 with t0:
     if is_ao:
         st.subheader("🌿 Baga Gara OroWise AI Dhuftan")
-        st.write("Akkaam! Baga gara giddala mammaaksa fi ogummaa aadaa Oromoo dhuftan.")
+        st.write("Akkam! Baga gara wiirtuu mammaaksa fi ogummaa aadaa Oromoo dhuftan.")
         st.write("OroWise mammaaksa Afaan Oromoo **3,351+** teeknoolojii AI faana walitti fiduun isiif dhiyeessa.")
         st.divider()
         st.markdown("### 🚀 Akkamitti Barbaaduu Dandeessu:")
-        st.write("• **🔍 Barbaacha Jechaa:** Jechoota Afaan Oromoo fi Ingiliffaan mammaaksa barbaadaa (*jaalala, dhugaa, dhabbata*).")
-        st.write("• **📖 Haala Jireenyaa (AI):** Haala jireenyaa keessan ibsaatii mammaaksa isaan deeggaru fi gorsa AI Safuu Oromoo irratti hudaa'e argadhaa.")
+        st.write("• **🔍 Barbaacha Jechaa:** Jechoota Afaan Oromoo fi Ingiliffaan mammaaksa barbaadaa (*jaalala, dhugaa, dhaabbata*).")
+        st.write("• **📖 Haala Jireenyaa (AI):** Haala jireenyaa keessan ibsaatii mammaaksa isaan deeggaru fi gorsa AI Safuu Oromoo irratti hundaa'e argadhaa.")
         st.write("• **🎭 Akka Miiraa:** Filannoowwan miiraa **25+** gubbaa filachuun mammaaksa itti dhihaatu argadhaa.")
         st.write("• **🔊 Sagalee Dhagahi:** Sagalee dubbisa mammaaksa sana dhageeffadhaa.")
-        st.write("• **📱 Qeensa Tokkoon Qooda:** Mammaaksa filattan WhatsApp fi X (Twitter) irratti qooddadhaa.")
+        st.write("• **📱 Cuqasa Tokkoon Qooda:** Mammaaksa filattan WhatsApp fi X (Twitter) irratti qooddadhaa.")
         st.write("• **❤️ Mammaaksa Olkaawwadhaa:** Mammaaksa jaallattan boodaaf olkaawwachuu dandeessu.")
-        st.caption("Nagaa fi Rahmata! Ogummaa dhalootaa dhalootti dabrera kana keessatti bashannanaa.")
+        st.caption("Nagaa fi Rahmata! Ogummaa dhalootaa dhalootti dabre kana keessatti bashannanaa.")
     else:
         st.subheader("🌿 Welcome to OroWise AI")
         st.write("Akkaam! Welcome to the digital repository of Oromo cultural philosophy.")
@@ -357,7 +357,7 @@ with t5:
     st.subheader("Miira akkamii keessa jirtu?" if is_ao else "How are you feeling or what energy are you seeking?")
     mood_keywords = {
         "💪 Jabina fi Onnee / Strength & Hope": "strength courage hope perseverance resilience endure brave power",
-        "⚖️ Ogummaa fi Offaggannoo / Wisdom & Caution": "wisdom warning caution secret truth careful secret discretion",
+        "⚖️ Ogummaa fi Of-eeggannoo / Wisdom & Caution": "wisdom warning caution secret truth careful secret discretion",
         "🤝 Tokkummaa fi Jaalala / Unity & Friendship": "community unity friend help together alliance trust harmony",
         "🌾 Obsa fi Yeroo / Patience & Time": "patience work time harvest growth delay perseverance wait season",
         "⚖️ Dhugaa fi Safuu / Justice & Integrity": "justice truth honor honesty safuu dignity right law moral",
@@ -367,7 +367,7 @@ with t5:
         "🕊️ Araara fi Nageenya / Reconciliation": "reconciliation peace argument anger calm mercy forgiveness truce",
         "🌾 Hojii fi Cira / Labor & Work": "farming work effort harvest sweat labor energy produce struggle",
         "😏 Qoosaa fi Kolfa / Humor & Satire": "foolish irony trick joke vanity pride lesson sarcasm play",
-        "🌅 Haaromsa fi Abdi / Renewal & Hope": "morning new begin future sunrise transformation change opportunity",
+        "🌅 Haaromsa fi Abdii / Renewal & Hope": "morning new begin future sunrise transformation change opportunity",
         "🤲 Kabaja fi Safuu / Respect & Humility": "humility modest respect honor elders bow gentle quiet safuu"
     }
     
@@ -395,7 +395,7 @@ with t6:
 # --- TAB 7: RANDOM DISCOVER ---
 with t7:
     st.subheader("🎲 Mammaaksa Carraan Barbaaduu" if is_ao else "🎲 Random Wisdom Generator")
-    btn_rand_lbl = "🔀 Mammaaksa Haarawa Agarsiisi" if is_ao else "🔀 Show New Random Proverbs"
+    btn_rand_lbl = "🔀 Mammaaksa Haaraa Agarsiisi" if is_ao else "🔀 Show New Random Proverbs"
     if st.button(btn_rand_lbl, type="primary"):
         st.session_state["random_samples"] = random.sample(data, min(5, len(data)))
     
