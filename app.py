@@ -124,7 +124,7 @@ def generate_gemini_response(prompt_text):
             last_error = e
             continue
             
-    raise Exception(f"AI Service Temporarily Busy. Please retry in a moment. Details: {last_error}")
+    raise Exception(f"AI Service Temporarily Busy. Details: {last_error}")
 
 def render_proverb_card(res, idx=None):
     p_id = res.get('ID', 'N/A')
@@ -396,8 +396,9 @@ with t6:
 with t7:
     st.subheader("🎲 Mammaaksa Carraan Barbaaduu" if is_ao else "🎲 Random Wisdom Generator")
     btn_rand_lbl = "🔀 Mammaaksa Haaraa Agarsiisi" if is_ao else "🔀 Show New Random Proverbs"
-    if st.button(btn_rand_lbl, type="primary"):
-        st.session_state["random_samples"] = random.sample(data, min(5, len(data)))
     
-    if "random_samples" not in st.session_state:
-        st.session_state["random_samples"] = rando
+    if "random_samples" not in st.session_state or st.button(btn_rand_lbl, type="primary"):
+        st.session_state["random_samples"] = random.sample(data, min(5, len(data)))
+        
+    for idx, res in enumerate(st.session_state["random_samples"], 1):
+  
