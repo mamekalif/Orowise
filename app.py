@@ -4,19 +4,24 @@ import re
 import math
 import os
 import random
+import urllib.parse
 from datetime import date
 from collections import Counter
 from google import genai
 
 # Page Configuration
 st.set_page_config(
-    page_title="OroWise AI - Khoobaa Dubbii",
+    page_title="OroWise | Khoobaa Dubbii",
     page_icon="🌿",
     layout="wide"
 )
 
 st.title("🌿 OroWise | Khoobaa Dubbii")
 st.caption("Interactive Gateway to 3,351+ Afaan Oromoo Proverbs & Cultural Wisdom")
+
+# Initialize Session State for Bookmarks/Favorites
+if "saved_proverbs" not in st.session_state:
+    st.session_state["saved_proverbs"] = []
 
 # --- Load Data ---
 @st.cache_data
@@ -95,7 +100,6 @@ api_key = os.environ.get("GEMINI_API_KEY") or st.secrets.get("GEMINI_API_KEY", "
 client = genai.Client(api_key=api_key) if api_key else None
 
 def generate_gemini_response(prompt_text):
-    """Tries multiple model names to bypass high-demand 503 errors."""
     models_to_try = ['gemini-2.5-flash', 'gemini-flash-latest', 'gemini-1.5-flash']
     last_error = None
     
@@ -111,52 +115,104 @@ def generate_gemini_response(prompt_text):
             last_error = e
             continue
             
-    raise Exception(f"All fallback models are currently busy (503 / Server Overloaded). Please try again in a moment. Details: {last_error}")
+    raise Exception(f"AI Service Temporarily Busy. Please retry in a moment. Details: {last_error}")
 
 def render_proverb_card(res, idx=None):
-    title_prefix = f"{idx}. " if idx else ""
-    st.markdown(f"### {title_prefix}[#{res.get('ID', 'N/A')}] {res.get('Mammaaksa_AO', '')}")
-    st.markdown(f"**Literal Translation:** {res.get('Translation_Literal_EN', 'N/A')}")
-    st.markdown(f"**Meaning:** {res.get('Meaning_EN', 'N/A')}")
-    st.caption(f"📁 Category: {res.get('Category_EN', 'General')} | 🏷️ Keywords: {res.get('Keywords_EN', 'N/A')}")
-    
-    share_text = f"\"{res.get('Mammaaksa_AO')}\"\n\nMeaning: {res.get('Meaning_EN')}\n\n#KhoobaaDubbii #OroWise #OromoProverbs"
-    st.code(share_text, language="text")
+    p_id = res.get('ID', 'N/A')
+    mammaaksa = res.get('Mammaaksa_AO', '')
+    literal = res.get('Translation_Literal_EN', 'N/A')
+    meaning = res.get('Meaning_EN', 'N/A')
+    category = res.get('Category_EN', 'General')
+    keywords = res.get('Keywords_EN', 'N/A')
 
-    if client and st.button(f"🤖 Generate AI Insights for #{res.get('ID')}", key=f"btn_ai_{res.get('ID')}_{random.randint(0,10000)}"):
-        prompt = f"""
-        You are an expert scholar in Afaan Oromoo literature for 'Khoobaa Dubbii'.
-        Analyze this Oromo proverb:
-        Proverb: {res.get('Mammaaksa_AO')}
-        Translation: {res.get('Translation_Literal_EN')}
-        Meaning: {res.get('Meaning_EN')}
-        Category: {res.get('Category_EN')}
-        
-        Provide:
-        1. Deep Cultural Context & Philosophy (Safuu / Oromo Values)
-        2. Modern Life Application / Moral Lesson
-        3. Ready-to-Publish Social Media Caption (with relevant hashtags)
+    # Visual Styled Container (Khoobaa Dubbii Digital Card)
+    with st.container():
+        st.markdown(
+            f"""
+            <div style="background-color: #1a1c23; border-left: 5px solid #2e7d32; padding: 15px; border-radius: 8px; margin-bottom: 10px;">
+                <h3 style="color: #4caf50; margin-top: 0;">{"#" + str(idx) + ". " if idx else ""}[#{p_id}] {mammaaksa}</h3>
+                <p style="color: #e0e0e0; font-size: 1.05em;"><b>Meaning:</b> {meaning}</p>
+                <p style="color: #b0bec5; font-size: 0.9em;"><b>Literal:</b> {literal}</p>
+                <p style="color: #81c784; font-size: 0.8em; margin-bottom: 0;">📁 Category: {category} | 🏷️ Keywords: {keywords}</p>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        # Audio Pronunciation Button (Text-to-Speech HTML)
+        tts_text = urllib.parse.quote(mammaaksa)
+        audio_html = f"""
+        <audio controls style="height: 30px; width: 250px;">
+            <source src="https://translate.google.com/translate_tts?ie=UTF-8&q={tts_text}&tl=om&client=tw-ob" type="audio/mpeg">
+            Your browser does not support audio elements.
+        </audio>
         """
-        with st.spinner("Generating AI Analysis..."):
-            try:
-                resp_text = generate_gemini_response(prompt)
-                st.success("Cultural Analysis Generated!")
-                st.markdown(resp_text)
-            except Exception as e:
-                st.error(f"{e}")
-    st.divider()
+        st.components.v1.html(audio_html, height=40)
 
-# --- APP NAVIGATION ---
+        # Action Buttons Row: Favorite, Social Share Links
+        c1, c2, c3, c4 = st.columns([1.5, 1.5, 1.5, 2])
+        
+        # Favorite / Bookmark
+        is_saved = any(s.get('ID') == p_id for s in st.session_state["saved_proverbs"])
+        fav_label = "❤️ Saved" if is_saved else "🤍 Save Proverb"
+        if c1.button(fav_label, key=f"fav_{p_id}_{random.randint(0,10000)}"):
+            if not is_saved:
+                st.session_state["saved_proverbs"].append(res)
+                st.toast(f"Saved proverb #{p_id} to your list!", icon="❤️")
+            else:
+                st.session_state["saved_proverbs"] = [s for s in st.session_state["saved_proverbs"] if s.get('ID') != p_id]
+                st.toast(f"Removed proverb #{p_id}", icon="🗑️")
+            st.rerun()
+
+        # WhatsApp Share Link
+        wa_text = urllib.parse.quote(f"🌿 *Khoobaa Dubbii*\n\n\"{mammaaksa}\"\n\nMeaning: {meaning}\n\nExplore more at OroWise!")
+        c2.markdown(f"[💬 Share WhatsApp](https://api.whatsapp.com/send?text={wa_text})")
+
+        # X (Twitter) Share Link
+        x_text = urllib.parse.quote(f"\"{mammaaksa}\"\n\nMeaning: {meaning}\n#KhoobaaDubbii #OroWise #OromoProverbs")
+        c3.markdown(f"[🐦 Share X](https://twitter.com/intent/tweet?text={x_text})")
+
+        # Copyable Text Codeblock
+        raw_share = f"\"{mammaaksa}\"\nMeaning: {meaning}\n#KhoobaaDubbii #OroWise"
+        c4.code(raw_share, language="text")
+
+        # AI Insights Button
+        if client and st.button(f"🤖 Generate AI Insights for #{p_id}", key=f"btn_ai_{p_id}_{random.randint(0,10000)}"):
+            prompt = f"""
+            You are an expert scholar in Afaan Oromoo literature for 'Khoobaa Dubbii'.
+            Analyze this Oromo proverb:
+            Proverb: {mammaaksa}
+            Translation: {literal}
+            Meaning: {meaning}
+            Category: {category}
+            
+            Provide:
+            1. Deep Cultural Context & Philosophy (Safuu / Oromo Values)
+            2. Modern Life Application / Moral Lesson
+            3. Ready-to-Publish Social Media Caption (with relevant hashtags)
+            """
+            with st.spinner("Generating AI Analysis..."):
+                try:
+                    resp_text = generate_gemini_response(prompt)
+                    st.success("Cultural Analysis Generated!")
+                    st.markdown(resp_text)
+                except Exception as e:
+                    st.error(f"{e}")
+        st.divider()
+
+# --- APP NAVIGATION TABS ---
 tab_names = [
     "🌟 Featured & Daily", 
     "🔍 Keyword Search", 
     "📖 Life Situation (AI)", 
-    "📂 By Category & Theme", 
+    "📂 Category & Theme", 
     "🎭 By Mood", 
     "🔤 Alphabetical (A-Z)", 
-    "🎲 Random Discover"
+    "🎲 Random Discover",
+    "❤️ Saved Proverbs",
+    "📊 Dataset Stats"
 ]
-t1, t2, t3, t4, t5, t6, t7 = st.tabs(tab_names)
+t1, t2, t3, t4, t5, t6, t7, t8, t9 = st.tabs(tab_names)
 
 # --- TAB 1: FEATURED & PROVERB OF THE DAY ---
 with t1:
@@ -281,3 +337,33 @@ with t7:
         
     for idx, res in enumerate(st.session_state["random_samples"], 1):
         render_proverb_card(res, idx)
+
+# --- TAB 8: SAVED / FAVORITES ---
+with t8:
+    st.subheader("❤️ Your Saved Proverbs Collection")
+    saved_list = st.session_state["saved_proverbs"]
+    if not saved_list:
+        st.info("You haven't saved any proverbs yet. Click '🤍 Save Proverb' on any card to add it here!")
+    else:
+        st.success(f"You have {len(saved_list)} saved proverb(s).")
+        if st.button("🗑️ Clear All Saved"):
+            st.session_state["saved_proverbs"] = []
+            st.rerun()
+        for idx, res in enumerate(saved_list, 1):
+            render_proverb_card(res, idx)
+
+# --- TAB 9: DATASET STATS ---
+with t9:
+    st.subheader("📊 OroWise Repository Analytics")
+    m1, m2, m3 = st.columns(3)
+    m1.metric("Total Proverbs", f"{len(data):,}")
+    categories_cnt = len(set(str(e.get('Category_EN', '')) for e in data if e.get('Category_EN')))
+    m2.metric("Categories", categories_cnt)
+    total_words = sum(len(tokenize(e.get('Mammaaksa_AO', ''))) for e in data)
+    m3.metric("Total Words in Corpus", f"{total_words:,}")
+
+    st.markdown("### Top Proverbs by Category")
+    cat_counts = Counter(str(e.get('Category_EN', 'General')) for e in data if e.get('Category_EN'))
+    for cat, count in cat_counts.most_common(8):
+        st.write(f"• **{cat}**: {count} proverbs")
+    
