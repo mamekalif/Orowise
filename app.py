@@ -28,16 +28,23 @@ except FileNotFoundError:
     st.error("Error: Mammaaksa.json file not found in directory.")
     st.stop()
 
+# --- Tokenizer Helper Function ---
+def tokenize(text):
+    return re.findall(r'\b\w+\b', str(text).lower()) if text else []
+
 # --- Build TF-IDF Search Engine ---
 @st.cache_data
 def build_index(data_entries):
-    def tokenize(text):
-        return re.findall(r'\b\w+\b', str(text).lower()) if text else []
-
-    documents = []
-    for entry in data_entries:
-        corpus = f"{entry.get('Mammaaksa_AO', '')} {entry.get('Translation_Literal_EN', '')} {entry.get('Meaning_EN', '')} {entry.get('Category_EN', '')} {entry.get('Keywords_EN', '')}"
-        documents.append(tokenize(corpus))
+    documents = [
+        tokenize(
+            f"{entry.get('Mammaaksa_AO', '')} "
+            f"{entry.get('Translation_Literal_EN', '')} "
+            f"{entry.get('Meaning_EN', '')} "
+            f"{entry.get('Category_EN', '')} "
+            f"{entry.get('Keywords_EN', '')}"
+        )
+        for entry in data_entries
+    ]
 
     num_docs = len(documents)
     df_counts = Counter()
@@ -57,9 +64,10 @@ def build_index(data_entries):
         doc_vectors.append(vec)
         doc_norms.append(norm)
 
-    return idf, doc_vectors, doc_norms, tokenize
+    return idf, doc_vectors, doc_norms
 
-idf, doc_vectors, doc_norms, tokenize = build_index(data)
+# Initialize TF-IDF index
+idf, doc_vectors, doc_norms = build_index(data)
 
 def semantic_search(query, category_filter=None, top_n=5):
     q_tokens = tokenize(query)
@@ -190,3 +198,4 @@ with tab2:
                                 st.markdown(match_explanation)
                             except Exception as e:
                                 st.error(f"AI error: {e}")
+    
