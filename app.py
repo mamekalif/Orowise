@@ -127,38 +127,36 @@ def render_proverb_card(res, idx=None):
     keywords = res.get('Keywords_EN', 'N/A')
 
     with st.container():
-        st.markdown(
-            f"""
-            <div style="background-color: #1a1c23; border-left: 5px solid #2e7d32; padding: 15px; border-radius: 8px; margin-bottom: 10px;">
-                <h3 style="color: #4caf50; margin-top: 0;">{"#" + str(idx) + ". " if idx else ""}[#{p_id}] {mammaaksa}</h3>
-                <p style="color: #e0e0e0; font-size: 1.05em;"><b>Meaning:</b> {meaning}</p>
-                <p style="color: #b0bec5; font-size: 0.9em;"><b>Literal:</b> {literal}</p>
-                <p style="color: #81c784; font-size: 0.8em; margin-bottom: 0;">📁 Category: {category} | 🏷️ Keywords: {keywords}</p>
-            </div>
-            """,
-            unsafe_allow_html=True
+        card_html = (
+            "<div style='background-color: #1a1c23; border-left: 5px solid #2e7d32; padding: 15px; border-radius: 8px; margin-bottom: 10px;'>"
+            + "<h3 style='color: #4caf50; margin-top: 0;'>" + ("#" + str(idx) + ". " if idx else "") + "[#" + str(p_id) + "] " + mammaaksa + "</h3>"
+            + "<p style='color: #e0e0e0; font-size: 1.05em;'><b>Meaning:</b> " + meaning + "</p>"
+            + "<p style='color: #b0bec5; font-size: 0.9em;'><b>Literal:</b> " + literal + "</p>"
+            + "<p style='color: #81c784; font-size: 0.8em; margin-bottom: 0;'>📁 Category: " + category + " | 🏷️ Keywords: " + keywords + "</p>"
+            + "</div>"
         )
+        st.markdown(card_html, unsafe_allow_html=True)
 
         safe_speech_text = re.sub(r'["\'\\]', '', mammaaksa)
-        audio_js_html = f"""
-        <button onclick="speakText()" style="background-color: #2e7d32; color: white; border: none; padding: 6px 14px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.9em;">
-            🔊 Listen Audio
-        </button>
-        <script>
-        function speakText() {{
-            if ('speechSynthesis' in window) {{
-                window.speechSynthesis.cancel();
-                var msg = new SpeechSynthesisUtterance("{safe_speech_text}");
-                msg.rate = 0.85;
-                msg.pitch = 1.0;
-                msg.lang = 'om-ET';
-                window.speechSynthesis.speak(msg);
-            }} else {{
-                alert('Text-to-speech is not supported on this browser.');
-            }}
-        }}
-        </script>
-        """
+        audio_js_html = (
+            "<button onclick='speakText()' style='background-color: #2e7d32; color: white; border: none; padding: 6px 14px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.9em;'>"
+            + "🔊 Listen Audio"
+            + "</button>"
+            + "<script>"
+            + "function speakText() {"
+            + "    if ('speechSynthesis' in window) {"
+            + "        window.speechSynthesis.cancel();"
+            + "        var msg = new SpeechSynthesisUtterance('" + safe_speech_text + "');"
+            + "        msg.rate = 0.85;"
+            + "        msg.pitch = 1.0;"
+            + "        msg.lang = 'om-ET';"
+            + "        window.speechSynthesis.speak(msg);"
+            + "    } else {"
+            + "        alert('Text-to-speech is not supported on this browser.');"
+            + "    }"
+            + "}"
+            + "</script>"
+        )
         st.components.v1.html(audio_js_html, height=45)
 
         c1, c2, c3, c4 = st.columns([1.5, 1.5, 1.5, 2])
@@ -184,19 +182,7 @@ def render_proverb_card(res, idx=None):
         c4.code(raw_share, language="text")
 
         if client and st.button(f"🤖 Generate AI Insights for #{p_id}", key=f"btn_ai_{p_id}_{random.randint(0,10000)}"):
-            prompt = f"""
-            You are an expert scholar in Afaan Oromoo literature for 'Khoobaa Dubbii'.
-            Analyze this Oromo proverb:
-            Proverb: {mammaaksa}
-            Translation: {literal}
-            Meaning: {meaning}
-            Category: {category}
-            
-            Provide:
-            1. Deep Cultural Context & Philosophy (Safuu / Oromo Values)
-            2. Modern Life Application / Moral Lesson
-            3. Ready-to-Publish Social Media Caption (with relevant hashtags)
-            """
+            prompt = f"You are an expert scholar in Afaan Oromoo literature for 'Khoobaa Dubbii'. Analyze this Oromo proverb:\nProverb: {mammaaksa}\nTranslation: {literal}\nMeaning: {meaning}\nCategory: {category}\n\nProvide:\n1. Deep Cultural Context & Philosophy (Safuu / Oromo Values)\n2. Modern Life Application / Moral Lesson\n3. Ready-to-Publish Social Media Caption (with relevant hashtags)"
             with st.spinner("Generating AI Analysis..."):
                 try:
                     resp_text = generate_gemini_response(prompt)
@@ -225,25 +211,18 @@ t0, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11 = st.tabs(tab_names)
 
 # --- TAB 0: WELCOME LANDING PAGE ---
 with t0:
-    st.markdown("""
-    ## 🌿 Welcome to Khoobaa Dubbii (OroWise AI)
-    **Akkaam! Welcome to the digital repository of Oromo cultural philosophy.**
-
-    Khoobaa Dubbii brings over **3,351+ Afaan Oromoo proverbs (mammaaksa)** into an interactive, AI-enhanced platform. Whether you are looking for wisdom on a specific life situation, studying Afaan Oromoo literature, or searching for meaningful content to share, OroWise is built for you.
-
-    ---
-
-    ### 🚀 How to Explore:
-    * **🔍 Keyword Search:** Find proverbs instantly by typing Oromo or English words (*jaalala, patience, dhugaa*).
-    * **📖 Life Situation (AI):** Describe a real-world story or conflict to get matching proverbs paired with AI-generated cultural guidance rooted in *Safuu*.
-    * **🎭 By Mood & Energy:** Choose from over **25+ emotional tones** to match your current feeling or topic.
-    * **🔊 Audio Speech:** Listen to text-to-speech pronunciation of any proverb.
-    * **📱 One-Click Social Sharing:** Copy formatted text or share directly to WhatsApp and X (Twitter).
-    * **❤️ Bookmarks:** Save your favorite proverbs for future reference.
-
-    ---
-    *Nagaa fi Rahmata! Explore wisdom preserved across generations.*
-    """)
+    st.subheader("🌿 Welcome to Khoobaa Dubbii (OroWise AI)")
+    st.write("Akkaam! Welcome to the digital repository of Oromo cultural philosophy.")
+    st.write("Khoobaa Dubbii brings over **3,351+ Afaan Oromoo proverbs (mammaaksa)** into an interactive, AI-enhanced platform.")
+    st.divider()
+    st.markdown("### 🚀 How to Explore:")
+    st.write("• **🔍 Keyword Search:** Find proverbs instantly by typing Oromo or English words (*jaalala, patience, dhugaa*).")
+    st.write("• **📖 Life Situation (AI):** Describe a real-world story or conflict to get matching proverbs paired with AI guidance rooted in *Safuu*.")
+    st.write("• **🎭 By Mood & Energy:** Choose from over **25+ emotional tones** to match your current feeling or topic.")
+    st.write("• **🔊 Audio Speech:** Listen to text-to-speech pronunciation of any proverb.")
+    st.write("• **📱 One-Click Social Sharing:** Copy formatted text or share directly to WhatsApp and X (Twitter).")
+    st.write("• **❤️ Bookmarks:** Save your favorite proverbs for future reference.")
+    st.caption("Nagaa fi Rahmata! Explore wisdom preserved across generations.")
 
 # --- TAB 1: FEATURED & PROVERB OF THE DAY ---
 with t1:
@@ -300,14 +279,7 @@ with t3:
                 if client:
                     with st.spinner("🤖 Gemini AI is evaluating cultural guidance..."):
                         candidates_formatted = "\n".join([f"{p.get('ID')}: {p.get('Mammaaksa_AO')} - {p.get('Meaning_EN')}" for p in candidates])
-                        prompt = f"""
-                        You are an expert scholar in Oromo philosophy and Safuu for 'Khoobaa Dubbii'.
-                        User Situation: "{situation}"
-                        Candidate Proverbs:
-                        {candidates_formatted}
-                        
-                        Explain which proverb best addresses this situation and provide constructive advice rooted in Oromo tradition.
-                        """
+                        prompt = f"You are an expert scholar in Oromo philosophy and Safuu for 'Khoobaa Dubbii'. User Situation: '{situation}'\nCandidate Proverbs:\n{candidates_formatted}\n\nExplain which proverb best addresses this situation and provide constructive advice rooted in Oromo tradition."
                         try:
                             resp_text = generate_gemini_response(prompt)
                             st.subheader("🤖 Khoobaa Dubbii | Situation Guidance")
@@ -327,7 +299,7 @@ with t4:
     for idx, res in enumerate(cat_matches[:15], 1):
         render_proverb_card(res, idx)
 
-# --- TAB 5: BY MOOD & ENERGY (26 COMPREHENSIVE MOODS) ---
+# --- TAB 5: BY MOOD & ENERGY ---
 with t5:
     st.subheader("How are you feeling or what energy are you seeking?")
     mood_keywords = {
@@ -423,16 +395,14 @@ with t9:
 
 # --- TAB 10: ABOUT US ---
 with t10:
-    st.markdown("""
-    ## ℹ️ About Khoobaa Dubbii & OroWise
-
-    **OroWise** is an open cultural technology initiative dedicated to digitizing, indexing, and democratizing access to Oromo oral traditions (*Mammaaksa*). 
-
-    ### 🎯 Our Mission
-    * **Preservation:** Safeguard Afaan Oromoo oral literature in digital, accessible formats for future generations.
-    * **AI Integration:** Combine traditional linguistic research with modern Information Retrieval (TF-IDF) and Artificial Intelligence (Gemini LLM) to provide situational advice based on Oromo philosophy (**Safuu**).
-    * **Brand Publishing:** Power the **Khoobaa Dubbii** cultural media brand with automated insights, social media cards, and community quotes.
-
-    ### 🛠️ Architecture & Tech Stack
-    * **Core Dataset:** Curated repository of 3,351+ Afaan Oromoo proverbs (`Mammaaksa.json`).
-    * **Search Engine:** Vectorized TF-IDF lexical search engine for high-accuracy keyword
+    st.subheader("ℹ️ About Khoobaa Dubbii & OroWise")
+    st.write("**OroWise** is an open cultural technology initiative dedicated to digitizing, indexing, and democratizing access to Oromo oral traditions (*Mammaaksa*).")
+    st.markdown("### 🎯 Our Mission")
+    st.write("• **Preservation:** Safeguard Afaan Oromoo oral literature in digital, accessible formats for future generations.")
+    st.write("• **AI Integration:** Combine traditional linguistic research with modern Information Retrieval (TF-IDF) and Artificial Intelligence (Gemini LLM) to provide situational advice based on Oromo philosophy (**Safuu**).")
+    st.write("• **Brand Publishing:** Power the **Khoobaa Dubbii** cultural media brand with automated insights, social media cards, and community quotes.")
+    st.markdown("### 🛠️ Architecture & Tech Stack")
+    st.write("• **Core Dataset:** Curated repository of 3,351+ Afaan Oromoo proverbs (`Mammaaksa.json`).")
+    st.write("• **Search Engine:** Vectorized TF-IDF lexical search engine for high-accuracy keyword and semantic retrieval.")
+    st.write("• **AI Intelligence:** Powered by Google Gemini AI for cultural contextualization and real-life scenario analysis.")
+    st.write
