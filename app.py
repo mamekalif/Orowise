@@ -90,9 +90,28 @@ def semantic_search(query, category_filter=None, top_n=10):
     scores.sort(key=lambda x: x[0], reverse=True)
     return [e for s, e in scores[:top_n] if s > 0]
 
-# --- Gemini Client Initialization ---
+# --- Gemini Client Initialization with Fallback ---
 api_key = os.environ.get("GEMINI_API_KEY") or st.secrets.get("GEMINI_API_KEY", "")
 client = genai.Client(api_key=api_key) if api_key else None
+
+def generate_gemini_response(prompt_text):
+    """Tries multiple model names to bypass high-demand 503 errors."""
+    models_to_try = ['gemini-2.5-flash', 'gemini-flash-latest', 'gemini-1.5-flash']
+    last_error = None
+    
+    for model_name in models_to_try:
+        try:
+            response = client.models.generate_content(
+                model=model_name,
+                contents=prompt_text,
+            )
+            if response and response.text:
+                return response.text
+        except Exception as e:
+            last_error = e
+            continue
+            
+    raise Exception(f"All fallback models are currently busy (503 / Server Overloaded). Please try again in a moment. Details: {last_error}")
 
 def render_proverb_card(res, idx=None):
     title_prefix = f"{idx}. " if idx else ""
@@ -101,7 +120,6 @@ def render_proverb_card(res, idx=None):
     st.markdown(f"**Meaning:** {res.get('Meaning_EN', 'N/A')}")
     st.caption(f"📁 Category: {res.get('Category_EN', 'General')} | 🏷️ Keywords: {res.get('Keywords_EN', 'N/A')}")
     
-    # Khoobaa Dubbii Social Share Formatting
     share_text = f"\"{res.get('Mammaaksa_AO')}\"\n\nMeaning: {res.get('Meaning_EN')}\n\n#KhoobaaDubbii #OroWise #OromoProverbs"
     st.code(share_text, language="text")
 
@@ -121,11 +139,11 @@ def render_proverb_card(res, idx=None):
         """
         with st.spinner("Generating AI Analysis..."):
             try:
-                resp = client.models.generate_content(model='gemini-flash-latest', contents=prompt)
+                resp_text = generate_gemini_response(prompt)
                 st.success("Cultural Analysis Generated!")
-                st.markdown(resp.text)
+                st.markdown(resp_text)
             except Exception as e:
-                st.error(f"AI Error: {e}")
+                st.error(f"{e}")
     st.divider()
 
 # --- APP NAVIGATION ---
@@ -143,7 +161,6 @@ t1, t2, t3, t4, t5, t6, t7 = st.tabs(tab_names)
 # --- TAB 1: FEATURED & PROVERB OF THE DAY ---
 with t1:
     st.subheader("📅 Proverb of the Day")
-    # Use day of year as seed for a stable daily proverb
     day_seed = date.today().timetuple().tm_yday
     daily_entry = data[day_seed % len(data)]
     render_proverb_card(daily_entry)
@@ -177,7 +194,7 @@ with t3:
     st.subheader("Describe a scenario or life situation:")
     situation = st.text_area(
         "Situation Context",
-        placeholder="Example: Someone refused advice from elders, thinking they knew better, but encountered failure.",
+        placeholder="Example: Nama jaalala hin beekne kan garaa isaa qofa yaadu kan bu'aa qofaaf nama jaalatu",
         height=100
     )
 
@@ -198,18 +215,18 @@ with t3:
                         candidates_formatted = "\n".join([f"{p.get('ID')}: {p.get('Mammaaksa_AO')} - {p.get('Meaning_EN')}" for p in candidates])
                         prompt = f"""
                         You are an expert scholar in Oromo philosophy and Safuu for 'Khoobaa Dubbii'.
-                        Situation: "{situation}"
+                        User Situation: "{situation}"
                         Candidate Proverbs:
                         {candidates_formatted}
                         
                         Explain which proverb best addresses this situation and provide constructive advice rooted in Oromo tradition.
                         """
                         try:
-                            resp = client.models.generate_content(model='gemini-flash-latest', contents=prompt)
+                            resp_text = generate_gemini_response(prompt)
                             st.subheader("🤖 Khoobaa Dubbii | Situation Guidance")
-                            st.markdown(resp.text)
+                            st.markdown(resp_text)
                         except Exception as e:
-                            st.error(f"AI Error: {e}")
+                            st.error(f"{e}")
 
 # --- TAB 4: CATEGORY & THEME ---
 with t4:
@@ -264,4 +281,3 @@ with t7:
         
     for idx, res in enumerate(st.session_state["random_samples"], 1):
         render_proverb_card(res, idx)
-                        
