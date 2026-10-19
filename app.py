@@ -249,7 +249,7 @@ t0, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11 = st.tabs(tab_names)
 # --- TAB 0: WELCOME LANDING PAGE ---
 with t0:
     if is_ao:
-        st.subheader("🌿 Baga Garasitti Bagaan Dhuftan OroWise AI")
+        st.subheader("🌿 Baga Gara OroWise AI Dhuftan")
         st.write("Akkaam! Baga gara giddala mammaaksa fi ogummaa aadaa Oromoo dhuftan.")
         st.write("OroWise mammaaksa Afaan Oromoo **3,351+** teeknoolojii AI faana walitti fiduun isiif dhiyeessa.")
         st.divider()
@@ -400,4 +400,4 @@ with t7:
         st.session_state["random_samples"] = random.sample(data, min(5, len(data)))
     
     if "random_samples" not in st.session_state:
-        st.session_state["random_sampl
+        st.session_state["random_samples"] = rando
