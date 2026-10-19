@@ -16,10 +16,11 @@ st.set_page_config(
     layout="wide"
 )
 
+# Header Branding
 st.title("🌿 OroWise | Khoobaa Dubbii")
 st.caption("Interactive Gateway to 3,351+ Afaan Oromoo Proverbs & Cultural Wisdom")
 
-# Initialize Session State for Bookmarks/Favorites
+# Initialize Session State
 if "saved_proverbs" not in st.session_state:
     st.session_state["saved_proverbs"] = []
 
@@ -125,7 +126,6 @@ def render_proverb_card(res, idx=None):
     category = res.get('Category_EN', 'General')
     keywords = res.get('Keywords_EN', 'N/A')
 
-    # Visual Styled Container (Khoobaa Dubbii Digital Card)
     with st.container():
         st.markdown(
             f"""
@@ -139,20 +139,30 @@ def render_proverb_card(res, idx=None):
             unsafe_allow_html=True
         )
 
-        # Audio Pronunciation Button (Text-to-Speech HTML)
-        tts_text = urllib.parse.quote(mammaaksa)
-        audio_html = f"""
-        <audio controls style="height: 30px; width: 250px;">
-            <source src="https://translate.google.com/translate_tts?ie=UTF-8&q={tts_text}&tl=om&client=tw-ob" type="audio/mpeg">
-            Your browser does not support audio elements.
-        </audio>
+        safe_speech_text = re.sub(r'["\'\\]', '', mammaaksa)
+        audio_js_html = f"""
+        <button onclick="speakText()" style="background-color: #2e7d32; color: white; border: none; padding: 6px 14px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.9em;">
+            🔊 Listen Audio
+        </button>
+        <script>
+        function speakText() {{
+            if ('speechSynthesis' in window) {{
+                window.speechSynthesis.cancel();
+                var msg = new SpeechSynthesisUtterance("{safe_speech_text}");
+                msg.rate = 0.85;
+                msg.pitch = 1.0;
+                msg.lang = 'om-ET';
+                window.speechSynthesis.speak(msg);
+            }} else {{
+                alert('Text-to-speech is not supported on this browser.');
+            }}
+        }}
+        </script>
         """
-        st.components.v1.html(audio_html, height=40)
+        st.components.v1.html(audio_js_html, height=45)
 
-        # Action Buttons Row: Favorite, Social Share Links
         c1, c2, c3, c4 = st.columns([1.5, 1.5, 1.5, 2])
         
-        # Favorite / Bookmark
         is_saved = any(s.get('ID') == p_id for s in st.session_state["saved_proverbs"])
         fav_label = "❤️ Saved" if is_saved else "🤍 Save Proverb"
         if c1.button(fav_label, key=f"fav_{p_id}_{random.randint(0,10000)}"):
@@ -164,19 +174,15 @@ def render_proverb_card(res, idx=None):
                 st.toast(f"Removed proverb #{p_id}", icon="🗑️")
             st.rerun()
 
-        # WhatsApp Share Link
         wa_text = urllib.parse.quote(f"🌿 *Khoobaa Dubbii*\n\n\"{mammaaksa}\"\n\nMeaning: {meaning}\n\nExplore more at OroWise!")
         c2.markdown(f"[💬 Share WhatsApp](https://api.whatsapp.com/send?text={wa_text})")
 
-        # X (Twitter) Share Link
         x_text = urllib.parse.quote(f"\"{mammaaksa}\"\n\nMeaning: {meaning}\n#KhoobaaDubbii #OroWise #OromoProverbs")
         c3.markdown(f"[🐦 Share X](https://twitter.com/intent/tweet?text={x_text})")
 
-        # Copyable Text Codeblock
         raw_share = f"\"{mammaaksa}\"\nMeaning: {meaning}\n#KhoobaaDubbii #OroWise"
         c4.code(raw_share, language="text")
 
-        # AI Insights Button
         if client and st.button(f"🤖 Generate AI Insights for #{p_id}", key=f"btn_ai_{p_id}_{random.randint(0,10000)}"):
             prompt = f"""
             You are an expert scholar in Afaan Oromoo literature for 'Khoobaa Dubbii'.
@@ -202,17 +208,42 @@ def render_proverb_card(res, idx=None):
 
 # --- APP NAVIGATION TABS ---
 tab_names = [
+    "🏠 Welcome",
     "🌟 Featured & Daily", 
     "🔍 Keyword Search", 
     "📖 Life Situation (AI)", 
     "📂 Category & Theme", 
-    "🎭 By Mood", 
+    "🎭 By Mood & Energy", 
     "🔤 Alphabetical (A-Z)", 
     "🎲 Random Discover",
     "❤️ Saved Proverbs",
-    "📊 Dataset Stats"
+    "📊 Dataset Stats",
+    "ℹ️ About Us",
+    "📩 Contact"
 ]
-t1, t2, t3, t4, t5, t6, t7, t8, t9 = st.tabs(tab_names)
+t0, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11 = st.tabs(tab_names)
+
+# --- TAB 0: WELCOME LANDING PAGE ---
+with t0:
+    st.markdown("""
+    ## 🌿 Welcome to Khoobaa Dubbii (OroWise AI)
+    **Akkaam! Welcome to the digital repository of Oromo cultural philosophy.**
+
+    Khoobaa Dubbii brings over **3,351+ Afaan Oromoo proverbs (mammaaksa)** into an interactive, AI-enhanced platform. Whether you are looking for wisdom on a specific life situation, studying Afaan Oromoo literature, or searching for meaningful content to share, OroWise is built for you.
+
+    ---
+
+    ### 🚀 How to Explore:
+    * **🔍 Keyword Search:** Find proverbs instantly by typing Oromo or English words (*jaalala, patience, dhugaa*).
+    * **📖 Life Situation (AI):** Describe a real-world story or conflict to get matching proverbs paired with AI-generated cultural guidance rooted in *Safuu*.
+    * **🎭 By Mood & Energy:** Choose from over **25+ emotional tones** to match your current feeling or topic.
+    * **🔊 Audio Speech:** Listen to text-to-speech pronunciation of any proverb.
+    * **📱 One-Click Social Sharing:** Copy formatted text or share directly to WhatsApp and X (Twitter).
+    * **❤️ Bookmarks:** Save your favorite proverbs for future reference.
+
+    ---
+    *Nagaa fi Rahmata! Explore wisdom preserved across generations.*
+    """)
 
 # --- TAB 1: FEATURED & PROVERB OF THE DAY ---
 with t1:
@@ -296,21 +327,44 @@ with t4:
     for idx, res in enumerate(cat_matches[:15], 1):
         render_proverb_card(res, idx)
 
-# --- TAB 5: BY MOOD ---
+# --- TAB 5: BY MOOD & ENERGY (26 COMPREHENSIVE MOODS) ---
 with t5:
     st.subheader("How are you feeling or what energy are you seeking?")
     mood_keywords = {
-        "💪 Encouragement & Strength": "strength courage hope perseverance",
-        "⚖️ Wisdom & Caution": "wisdom warning caution secret truth",
-        "🤝 Unity & Friendship": "community unity friend help together",
-        "🌾 Patience & Growth": "patience work time harvest growth",
-        "⚖️ Justice & Integrity": "justice truth honor honesty safuu"
+        "💪 Encouragement & Inner Strength": "strength courage hope perseverance resilience endure brave power",
+        "⚖️ Wisdom, Caution & Prudence": "wisdom warning caution secret truth careful secret discretion",
+        "🤝 Unity, Brotherhood & Solidarity": "community unity friend help together alliance trust harmony",
+        "🌾 Patience, Time & Growth": "patience work time harvest growth delay perseverance wait season",
+        "⚖️ Justice, Honor & Integrity": "justice truth honor honesty safuu dignity right law moral",
+        "🙏 Gratitude, Peace & Blessing": "blessing thank peace fortune good destiny life grace calm",
+        "👑 Leadership, Gadaa & Responsibility": "lead responsibility guide elder head decision power governance chief",
+        "🏡 Family, Kinship & Marriage": "family mother father child relatives blood home marriage parent lineage",
+        "🕊️ Conflict Resolution & Reconciliation": "reconciliation peace argument anger calm mercy forgiveness truce",
+        "🌾 Hard Work, Labor & Diligence": "farming work effort harvest sweat labor energy produce struggle",
+        "😏 Humor, Wit & Satire": "foolish irony trick joke vanity pride lesson sarcasm play",
+        "🌅 Renewal, Hope & Transformation": "morning new begin future sunrise transformation change opportunity",
+        "🤲 Humility, Modesty & Respect": "humility modest respect honor elders bow gentle quiet safuu",
+        "🛡️ Courage in Hardship & Adversity": "hardship pain suffering trial overcome trouble battle defense brave",
+        "🐍 Beware of Deceit & Hypocrisy": "deceit lie fake hypocrisy snake betrayal mask double warning",
+        "💰 Wealth, Greed & Materialism": "money rich poor greed debt wealth property gold spending trade",
+        "⏳ Impermanence & Mortality": "death fleeting temporary end passage legacy age youth memory",
+        "🗣️ Speech, Eloquence & Words": "tongue speech word silence listen talk promise mouth truth",
+        "🤝 Trust, Loyalty & Faithfulness": "trust loyal faithful promise oath rely companion support",
+        "🚫 Pride, Arrogance & Vanity": "pride arrogant boast downfall ego humble shame destruction",
+        "🎓 Knowledge, Education & Learning": "learn study knowledge mind teacher scholar pupil intelligence curiosity",
+        "🌿 Nature, Land & Environment": "earth land water tree cattle soil rain harvest river dynamic",
+        "🛡️ Self-Reliance & Independence": "self standalone independent rely craft work own hands courage",
+        "💔 Disillusionment & Regret": "regret mistake loss sorrow late grief lesson reflection tear",
+        "🎯 Focus, Destiny & Purpose": "purpose goal direction path target vision destiny future dream",
+        "💖 Love, Affection & Devotion": "love affection heart care devotion spouse warmth desire bond"
     }
-    chosen_mood = st.radio("Choose Mood/Tone", list(mood_keywords.keys()), horizontal=True)
+    
+    chosen_mood = st.selectbox("Choose Mood / Emotional Pathway", list(mood_keywords.keys()))
     
     if chosen_mood:
         keyword = mood_keywords[chosen_mood]
-        results = semantic_search(keyword, top_n=8)
+        results = semantic_search(keyword, top_n=10)
+        st.info(f"Displaying proverbs matching the energy of **{chosen_mood}**:")
         for idx, res in enumerate(results, 1):
             render_proverb_card(res, idx)
 
@@ -364,6 +418,21 @@ with t9:
 
     st.markdown("### Top Proverbs by Category")
     cat_counts = Counter(str(e.get('Category_EN', 'General')) for e in data if e.get('Category_EN'))
-    for cat, count in cat_counts.most_common(8):
+    for cat, count in cat_counts.most_common(10):
         st.write(f"• **{cat}**: {count} proverbs")
-    
+
+# --- TAB 10: ABOUT US ---
+with t10:
+    st.markdown("""
+    ## ℹ️ About Khoobaa Dubbii & OroWise
+
+    **OroWise** is an open cultural technology initiative dedicated to digitizing, indexing, and democratizing access to Oromo oral traditions (*Mammaaksa*). 
+
+    ### 🎯 Our Mission
+    * **Preservation:** Safeguard Afaan Oromoo oral literature in digital, accessible formats for future generations.
+    * **AI Integration:** Combine traditional linguistic research with modern Information Retrieval (TF-IDF) and Artificial Intelligence (Gemini LLM) to provide situational advice based on Oromo philosophy (**Safuu**).
+    * **Brand Publishing:** Power the **Khoobaa Dubbii** cultural media brand with automated insights, social media cards, and community quotes.
+
+    ### 🛠️ Architecture & Tech Stack
+    * **Core Dataset:** Curated repository of 3,351+ Afaan Oromoo proverbs (`Mammaaksa.json`).
+    * **Search Engine:** Vectorized TF-IDF lexical search engine for high-accuracy keyword
