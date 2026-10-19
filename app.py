@@ -7,32 +7,6 @@ from collections import Counter
 from google import genai
 
 # Page Configuration
-st.set_page_config(page_title="OroWise AI - Afaan Oromoo Proverbs", page_icon="🌿", layout="centered")
-
-st.title("🌿 OroWise Hybrid AI Engine")
-st.caption("Search 3,351+ Afaan Oromoo Proverbs by Keyword or Situation for Khoobaa Dubbii")
-
-# Load Data
-@st.cache_data
-def load_data():
-    with open('Mammaaksa.json', 'r', encoding='utf-8') as f:
-        return json.load(f)
-
-data = load_data()
-
-# Build TF-IDF Search Index
-@st.cache_data
-def build_index(data_entries):
-    def tokenize(text):
-import streamlit as st
-import json
-import re
-import math
-import os
-from collections import Counter
-from google import genai
-
-# Page Configuration
 st.set_page_config(
     page_title="OroWise AI - Afaan Oromoo Proverbs",
     page_icon="🌿",
@@ -216,4 +190,3 @@ with tab2:
                                 st.markdown(match_explanation)
                             except Exception as e:
                                 st.error(f"AI error: {e}")
-
