@@ -1,0 +1,6 @@
+.env
+__pycache__/
+*.pyc
+.streamlit/
+orowise_ai_cards.txt
+
